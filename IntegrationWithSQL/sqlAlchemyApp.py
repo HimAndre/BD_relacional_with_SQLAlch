@@ -1,10 +1,5 @@
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import Session
-from sqlalchemy import Column, create_engine, inspect
-from sqlalchemy import String
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
+from sqlalchemy.orm import declarative_base, relationship, Session
+from sqlalchemy import Column, create_engine, inspect, String, ForeignKey, Integer, select
 
 Base = declarative_base()
 
@@ -16,42 +11,33 @@ class User(Base):
     fullname = Column(String)
 
     address = relationship(
-        "address", back_populates="user", cascade="all, delete-orphan"
+        "Address", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self):
         return f"User(id={self.id}, name={self.name}, fullname={self.fullname})"
     
-
-
 class Address(Base):
     __tablename__ = "address"
     id = Column(Integer, primary_key=True)
     email_address = Column(String(30), nullable=False)
     user_id = Column(Integer, ForeignKey("user_account.id"), nullable=False)
 
-    user = relationship("User", back_populates="Address")
+    user = relationship("User", back_populates="address")
 
     def __repr__(self):
-        return f"Address (id={self.id}, email_address={self.email_address})"
-
+        return f"Address(id={self.id}, email_address={self.email_address})"
 
 print(User.__tablename__)
 print(Address.__tablename__)
 
-#conexão com banco de dados
-
+# Conexão com banco de dados
 engine = create_engine("sqlite://")
 
-#criando as classes como tabelas no banco de dados 
+# Criando as classes como tabelas no banco de dados
 Base.metadata.create_all(engine)
 
-#depreciado - será removido em futuro realease
-#print (engine.table_name())
-
-
-# investiga o esquema do banco de dados 
-
+# Investiga o esquema do banco de dados
 inspetor_engine = inspect(engine)
 print(inspetor_engine.has_table("user_account"))
 
@@ -62,7 +48,7 @@ with Session(engine) as session:
     juliana = User(
         name='juliana',
         fullname="juliana Mascarenhas",
-        Address=[Address(email_address="julianam@email.com")]
+        address=[Address(email_address="julianam@email.com")]
     )
 
     sandy = User(
@@ -74,10 +60,18 @@ with Session(engine) as session:
 
     patrick = User(name="patrick", fullname= "Patrick Cardoso")
 
-#enviando para o BD(persistencia de dados)
+    # Enviando para o BD (persistência de dados)
     session.add_all([juliana, sandy, patrick])
 
     session.commit()
 
+stmt = select(User).where(User.name.in_(['juliana', 'sandy']))
+print('recuperando usuarios a partir de condicao de filtragem')
+for user in session.scalars(stmt):
+    print(user)
 
+stmt_address = select(Address).where(Address.id.in_([2]))
+print('recuperando os endereçoes de email de sandy')
+for address in session.scalars(stmt_address):
+    print(address)
 
