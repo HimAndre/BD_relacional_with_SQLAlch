@@ -1,5 +1,6 @@
+from multiprocessing import connection
 from sqlalchemy.orm import declarative_base, relationship, Session
-from sqlalchemy import Column, create_engine, inspect, String, ForeignKey, Integer, select
+from sqlalchemy import Column, create_engine, func, inspect, String, ForeignKey, Integer, select
 
 Base = declarative_base()
 
@@ -75,3 +76,23 @@ print('recuperando os endereçoes de email de sandy')
 for address in session.scalars(stmt_address):
     print(address)
 
+order_stmt = select(User).order_by(User.fullname.desc())
+print("\nRecuperando info de maneira ordenada")
+for result in session.scalars(order_stmt):
+    print(result)
+
+stmt_join = select(User.fullname, Address.email_address).join_from(Address, User)
+print("\n")
+for result in session.scalars(stmt_join):
+    print(result)
+
+connection = engine.connect()
+results = connection.execute(stmt_join).fetchall()
+print("\nexcutando statement a partir da connection")
+for result in results:
+    print(result)
+
+stmt_count = (select(func.count("*")).select_from(User))
+print("Total de instancias em User")
+for result in session.scalars(stmt_count):
+    print(result)
